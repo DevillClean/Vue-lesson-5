@@ -1,115 +1,97 @@
 <script>
+import CryptoConvert from 'crypto-convert';
+import Input from "@/components/input.vue";
+import Selector from "@/components/Selector.vue";
 
-import axios from 'axios'
+const convert = new CryptoConvert();
 export default {
+  components: {Selector, Input},
   data(){
-    return{
-      city:'',
-      error:'',
-      info: null
+    return {
+      amount: 0,
+      cryptoFirst: '',
+      cryptoSecond: '',
+      error: '',
+      result: 0
     }
-  },
-  computed:{
-    cityName(){
-      return "«" + this.city + "»"
-    },
-    showTemp(){
-      return "Температура :" + this.info.main.temp
-    },
-    showFeelsLike(){
-      return "Ощущаеться как :" + this.info.main.feels_like
-    },
-    showMaxTemp(){
-      return "Максимальная температура :" + this.info.main.temp_max
-    },
   },
   methods:{
-    getWeather(){
-      if(this.city.trim().length < 2){
-        this.error = "Нужно название больше одного символа"
-        return false
+    changeAmount(val){
+      this.amount = val
+    },
+    setCryptoFirst(val){
+      this.cryptoFirst = val
+    },
+    setCryptoSecond(val){
+      this.cryptoSecond = val
+    },
+    async convert(){
+      if(this.amount <= 0) {
+        this.error = 'Введите число больше за ноль';
+        return;
+      } else if(this.cryptoFirst == '' || this.cryptoSecond == ''){
+        this.error = 'Выберите валюту';
+        return;
+      } else if(this.setCryptoFirst == this.setCryptoSecond){
+        this.error = 'Выберите другую валюту';
+        return;
       }
-      this.error = ""
 
-      axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${this.city}&units=metric&appid=1e0a068ed11d94f91ed9fac839881218`)
-          .then(res => (this.info = res.data))
+      this.error = '';
+
+      await convert.ready();
+
+      this.result = convert.BTC.USD(this.amount);
+
+      if(this.cryptoFirst == 'BTC' && this.cryptoSecond == 'ETH')
+        this.result = convert.BTC.ETH(this.amount);
+      else if(this.cryptoFirst == 'BTC' && this.cryptoSecond == 'USDT')
+        this.result = convert.BTC.USDT(this.amount);
+      else if(this.cryptoFirst == 'ETH' && this.cryptoSecond == 'BTC')
+        this.result = convert.ETH.BTC(this.amount);
+      else if(this.cryptoFirst == 'ETH' && this.cryptoSecond == 'USDT')
+        this.result = convert.ETH.USDT(this.amount);
+      else if(this.cryptoFirst == 'USDT' && this.cryptoSecond == 'BTC')
+        this.result = convert.USDT.BTC(this.amount);
+      else if(this.cryptoFirst == 'USDT' && this.cryptoSecond == 'ETH')
+        this.result = convert.USDT.ETH(this.amount);
     }
-  }
+  },
 }
+
 </script>
 
 <template>
-  <div class="wrapper">
-    <h1>Приложение с погодой </h1>
-    <p>Узнать погоду в {{city == '' ? ' городе' : cityName}}</p>
-    <input type="text" v-model="city" placeholder="Введіть місто">
-    <button v-if="city != ''" @click="getWeather">Получить результат</button>
-    <button disabled v-else>Введите название города</button>
-    <p class="error"> {{error}}</p>
 
-
-    <div v-if="info != null">
-    <p>{{showTemp}}</p>
-      <p>{{showFeelsLike}}</p>
-      <p>{{showMaxTemp}}</p>
-    </div>
-
+  <h1>CRYPTO</h1>
+  <Input :changeAmount="changeAmount" :convert="convert"/>
+  <br>
+  <p v-if="error !=''">{{error}}</p>
+  <p v-if="result != 0" className="result-text">{{result}}</p>
+  <button class="button" @click="convert()">Конвертировать</button>
+  <div className="selectors">
+      <Selector :setCrypto="setCryptoFirst"/>
+      <Selector :setCrypto="setCryptoSecond"/>
   </div>
-
 
 </template>
 
 <style scoped>
-.error{
-  color: red;
+.selectors{
+  display: flex;
+  justify-content: space-around;
+  width: 700px;
+  margin: 0 auto;
 }
-
-.wrapper{
-  width: 900px;
-  height: 500px;
-  border-radius: 50px;
-  padding: 20px;
-  background: #4a65eb;
-  text-align: center;
-  color: white;
-}
-.wrapper h1{
-  margin-top: 50px;
-}
-.wrapper p{
-  margin-top: 20px;
-}
-.wrapper input{
-  margin-top: 30px;
-  background: #4b59a7;
-  border: 0;
-  border-bottom: 2px solid #565656;
-
-  font-size: 16px;
-  padding: 5px 8px;
+.button{
+  top: -20px;
   outline: none;
-}
-.wrapper input:focus{
-  border-bottom-color: #080101;
-}
-
-.wrapper button{
-  background: #2648fb;
-  color: white;
-  border-radius: 10px;
-  border: 2px solid #162eab;
   padding: 10px 15px;
-  margin-left: 20px;
+  background: #1A032D;
+  color: white;
+  font-weight: bold;
   cursor: pointer;
+  text-transform: uppercase;
   transition: transform 500ms ease;
 }
-.wrapper button:hover{
-  transform: scale(1.1) translateY(-5px);
-}
-
-.wrapper button:disabled{
-  cursor: not-allowed;
-}
-
-
 </style>
